@@ -101,6 +101,9 @@ class UI extends pc.ScriptType {
                 selected = 'NONE';
             (this.div.querySelector('[plc-value-currentlySelected]')! as HTMLParagraphElement).innerText = `${selected.charAt(0) + selected.substring(1).toLowerCase()}`;
         }.bind(this),
+        'update-passive-boost': function (this: UI, value: number) {
+            (this.div.querySelector('[plc-value-passiveBoost]')! as HTMLParagraphElement).innerText = `Passive boost: ${value}`;
+        }.bind(this)
 
     };
 
@@ -143,6 +146,11 @@ class UI extends pc.ScriptType {
         this.gameState = gameState;
         this.handleUpdateMoney(gameState.money);
         this.handleUpdateCurrentlySelected(gameState.houseType);
+        this.handleUpdatePassiveBoost(gameState.boosters);
+    }
+
+    handleUpdatePassiveBoost(value: number) {
+        this.actions["update-passive-boost"](value);
     }
 
     handleUpdateMoney(newMoney: number) {

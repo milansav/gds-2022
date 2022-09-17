@@ -2,6 +2,7 @@ class ActiveGenerator extends pc.ScriptType {
 
     gameState: GameData;
     floorBonus: number = -1;
+    timeElapsed: number = 0;
 
     initialize() {
         this.app.on('event-game-state-updated', this.handleGameStateUpdate, this);
@@ -12,9 +13,17 @@ class ActiveGenerator extends pc.ScriptType {
         if(!this.gameState) return;
         if(this.floorBonus < 0)
             this.floorBonus = this.gameState.floor;
-        const earning = (this.gameState.baseEarning * dt) / 60;
+
+        if(this.timeElapsed < 1) {
+            this.timeElapsed += dt;
+            return;
+        }
+
+        const earning = (this.gameState.baseEarning * this.timeElapsed) / 60;
 
         this.app.fire('event-earn-money', earning);
+
+        this.timeElapsed = 0;
     }
 
     handleGameStateUpdate(gameState: GameData) {

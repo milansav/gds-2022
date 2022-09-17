@@ -18,6 +18,7 @@ class GameState extends pc.ScriptType {
     initialize() {
         this.app.on('event-purchase', this.handlePurchase, this);
         this.app.on('force-state-update', this.forceUpdate, this);
+        this.app.on('event-update-booster', this.handleUpdateBooster, this);
         this.app.on('event-earn-money', this.handleMoneyEarn, this);
         this.app.on('event-update-game-state', this.handleUpdateGameState, this);
         this.app.on('event-update-game-state-housetype', this.handleUpdateHouseType, this);
@@ -30,6 +31,12 @@ class GameState extends pc.ScriptType {
 
     handlePurchase(cost: number) {
         this.data.money -= cost;
+
+        this.forceUpdate();
+    }
+
+    handleUpdateBooster(amount: number) {
+        this.data.boosters += amount;
 
         this.forceUpdate();
     }
