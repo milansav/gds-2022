@@ -1,7 +1,7 @@
 class GridInput extends pc.ScriptType {
 
     pos: pc.Vec3 = new pc.Vec3();
-    depth = 10;
+    depth: number;
     camera: pc.Camera;
     offset: pc.Vec3;
 
@@ -15,8 +15,15 @@ class GridInput extends pc.ScriptType {
         this.app.mouse.on(pc.EVENT_MOUSEMOVE, this.onMouseMove, this);
     }
 
-    onMouseDown() {
+    onMouseDown(event: any) {
+        //@ts-ignore
+        this.camera.screenToWorld(event.x, event.y, this.depth, this.pos);
 
+        const clickPosition = this.lockPosition(this.pos);
+
+        console.log(`Clicked at [${clickPosition.x},${clickPosition.z}]`);
+
+        this.app.fire('event-grid-clicked', clickPosition);
     }
 
     onMouseMove(event: any) {
@@ -33,6 +40,9 @@ class GridInput extends pc.ScriptType {
 }
 
 pc.registerScript(GridInput, 'gridInput');
+GridInput.attributes.add('depth', {
+    type: 'number'
+});
 GridInput.attributes.add('offset', {
     type: 'vec3',
     description: 'Grid Offset'
