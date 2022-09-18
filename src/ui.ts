@@ -39,7 +39,7 @@ const houseData: {
         description: 'It is nothing'
     },
     'LAND': {
-        price: 200,
+        price: 100,
         description: 'Gives you somewhere to build on'
     },
     'HOUSE': {
@@ -48,18 +48,18 @@ const houseData: {
     },
     'BANK': {
         price: 2000,
-        description: 'Gives you 800 cash per minute'
+        description: 'Gives you 1600 cash per minute'
     },
     'WINDMILL': {
         price: 500,
-        description: 'Gives you 400 cash per minute'
+        description: 'Gives you 800 cash per minute'
     },
     'PORT': {
         price: 4000,
-        description: 'Gives you 1000 cash per minute'
+        description: 'Gives you 2000 cash per minute'
     },
     'WINDBLOWER': {
-        price: 2000,
+        price: 300,
         description: 'Shields you from storms'
     },
     'ELEVATOR': {
@@ -68,7 +68,7 @@ const houseData: {
     },
     'FARM': {
         price: 1000,
-        description: 'Gives you 600 cash per minute'
+        description: 'Gives you 1200 cash per minute'
     },
 };
 

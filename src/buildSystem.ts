@@ -3,6 +3,7 @@ type Building = {
     position: pc.Vec3;
     uuid: string;
     entity: pc.Entity;
+    priority: number;
 };
 
 type Floor = {
@@ -22,7 +23,7 @@ const buildingsMap: {
     'HOUSE': 7
 };
 
-const globalFloors: Floor[] = [{
+let globalFloors: Floor[] = [{
     buildings: []
 }, {
     buildings: []
@@ -130,8 +131,6 @@ class BuildSystem extends pc.ScriptType {
         const buildings = currentFloor.buildings.filter(building => building.position.x === coordinates.x && building.position.z === coordinates.z);
         const buildingsCount = buildings.length;
 
-        console.log(buildings);
-
         if(this.gameState.money < houseData[this.gameState.houseType].price)
             return 'BLOCKED';
 
@@ -237,7 +236,8 @@ class BuildSystem extends pc.ScriptType {
             type: 'LAND',
             position: coordinates,
             uuid: uuid,
-            entity: instance
+            entity: instance,
+            priority: stormPriority['LAND']
         };
 
         this.currentFloorObject.addChild(instance);
@@ -254,7 +254,8 @@ class BuildSystem extends pc.ScriptType {
             type: 'PORT',
             position: coordinates,
             uuid: crypto.randomUUID(),
-            entity: instance
+            entity: instance,
+            priority: stormPriority['PORT']
         });
     }
     spawnHouse(coordinates: pc.Vec3) {
@@ -270,7 +271,8 @@ class BuildSystem extends pc.ScriptType {
             type: this.gameState.houseType,
             position: coordinates,
             uuid: crypto.randomUUID(),
-            entity: instance
+            entity: instance,
+            priority: stormPriority[this.gameState.houseType]
         });
     }
 

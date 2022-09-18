@@ -8,11 +8,11 @@ type GameData = {
 
 class GameState extends pc.ScriptType {
     data: GameData = {
-        money: 10000,
+        money: 2000,
         floor: 0,
         houseType: 'EMPTY',
         boosters: 1,
-        baseEarning: 1000
+        baseEarning: 2000
     };
 
     initialize() {
