@@ -48,15 +48,15 @@ const houseData: {
     },
     'BANK': {
         price: 2000,
-        description: 'Gives you 1600 cash per minute'
+        description: 'Gives you 3200 cash per minute'
     },
     'WINDMILL': {
         price: 500,
-        description: 'Gives you 800 cash per minute'
+        description: 'Gives you 1600 cash per minute'
     },
     'PORT': {
         price: 4000,
-        description: 'Gives you 2000 cash per minute'
+        description: 'Gives you 4000 cash per minute'
     },
     'WINDBLOWER': {
         price: 300,
@@ -68,7 +68,7 @@ const houseData: {
     },
     'FARM': {
         price: 1000,
-        description: 'Gives you 1200 cash per minute'
+        description: 'Gives you 2400 cash per minute'
     },
 };
 
@@ -77,6 +77,7 @@ class UI extends pc.ScriptType {
     css: pc.Asset;
     html: pc.Asset;
     div: HTMLDivElement;
+    slideshow: HTMLElement;
 
     gameState: GameData;
 
@@ -117,6 +118,9 @@ class UI extends pc.ScriptType {
             });
 
             if(house.type === 'ELEVATOR') {
+                const finishButton = document.createElement('button');
+                finishButton.innerText = "Finish";
+                finishButton.addEventListener('click', this.finishHandle.bind(this));
                 const upButton = document.createElement('button');
                 upButton.addEventListener('click', function(this: UI) {
                     this.app.fire('event-floor-up');
@@ -134,6 +138,7 @@ class UI extends pc.ScriptType {
                     actionsRoot.appendChild(downButton);
                 if(this.gameState.floor < 4)
                     actionsRoot.appendChild(upButton);
+                if(this.gameState.floor === 4) actionsRoot.appendChild(finishButton);
             }
         }.bind(this),
         'update-floor': function (this: UI, floor: number) {
@@ -174,12 +179,48 @@ class UI extends pc.ScriptType {
 
         closeOverlayButton.addEventListener('click', this.handleCloseOverlay.bind(this));
 
-        console.log(buttons);
 
+        this.slideshow = this.div.querySelector('#slideshow')!;
+
+        this.slideshow.addEventListener('click', function(this: UI) {
+            this.slideshow.children[this.slideshow.children.length-1].remove();
+            if(this.slideshow.children.length === 0) {
+                this.slideshow.remove();
+            }
+        }.bind(this));
         document.body.appendChild(this.div);
 
         this.app.on('event-game-state-updated', this.handleUpdateUIToMatchState, this);
         this.app.on('event-house-action', this.handleHouseAction, this);
+    }
+
+    finishHandle() {
+        const slideshowElement = document.createElement('div');
+        slideshowElement.classList.add('slideshow');
+
+        const cover = document.createElement('div');
+        cover.classList.add('cover');
+
+        slideshowElement.appendChild(cover);
+
+        const links = ['/api/assets/102494656/file/endscreen-1.png?branchId=bba92379-e3ff-426c-b46f-32aa714a6fe5', '/api/assets/102494655/file/endscreen-2.png?branchId=bba92379-e3ff-426c-b46f-32aa714a6fe5',
+        '/api/assets/102494653/file/endscreen-3.png?branchId=bba92379-e3ff-426c-b46f-32aa714a6fe5', '/api/assets/102494652/file/endscreen-4.png?branchId=bba92379-e3ff-426c-b46f-32aa714a6fe5', '/api/assets/102494651/file/endscreen-5.png?branchId=bba92379-e3ff-426c-b46f-32aa714a6fe5',
+        '/api/assets/102494654/file/endscreen-6.png?branchId=bba92379-e3ff-426c-b46f-32aa714a6fe5'];
+
+        links.reverse().forEach(link => {
+            const img = document.createElement("img");
+            img.src = link;
+            slideshowElement.appendChild(img);
+        });
+
+        slideshowElement.addEventListener('click', function(this: UI) {
+            slideshowElement.children[slideshowElement.children.length-1].remove();
+            if(slideshowElement.children.length === 0) {
+                slideshowElement.remove();
+            }
+        }.bind(this));
+
+        this.div.appendChild(slideshowElement);
     }
 
     handleUpdateUIToMatchState(gameState: GameData) {
