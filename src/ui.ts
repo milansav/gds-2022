@@ -59,7 +59,7 @@ const houseData: {
         description: 'Gives you 1000 cash per minute'
     },
     'WINDBLOWER': {
-        price: 5000,
+        price: 2000,
         description: 'Shields you from storms'
     },
     'ELEVATOR': {

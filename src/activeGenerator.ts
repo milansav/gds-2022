@@ -22,8 +22,6 @@ class ActiveGenerator extends pc.ScriptType {
 
         const earning = (this.gameState.baseEarning * this.multiplier * this.timeElapsed) / 60;
 
-        console.log(`Earned per second ${earning}`);
-
         this.app.fire('event-earn-money', earning);
 
         this.timeElapsed = 0;
