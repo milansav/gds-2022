@@ -8,7 +8,7 @@ type GameData = {
 
 class GameState extends pc.ScriptType {
     data: GameData = {
-        money: 1000,
+        money: 10000,
         floor: 0,
         houseType: 'EMPTY',
         boosters: 1,
@@ -23,10 +23,22 @@ class GameState extends pc.ScriptType {
         this.app.on('event-update-game-state', this.handleUpdateGameState, this);
         this.app.on('event-update-game-state-housetype', this.handleUpdateHouseType, this);
         this.app.fire('event-game-state-updated', this.data);
+        this.app.on('event-floor-up', this.handleFloorUp, this);
+        this.app.on('event-floor-down', this.handleFloorDown, this);
     }
 
     forceUpdate() {
         this.app.fire('event-game-state-updated', this.data);
+    }
+
+    handleFloorDown() {
+        this.data.floor -= 1;
+        this.forceUpdate();
+    }
+
+    handleFloorUp() {
+        this.data.floor += 1;
+        this.forceUpdate();
     }
 
     handlePurchase(cost: number) {
@@ -37,6 +49,8 @@ class GameState extends pc.ScriptType {
 
     handleUpdateBooster(amount: number) {
         this.data.boosters += amount;
+
+        if(this.data.boosters < 1) this.data.boosters = 1;
 
         this.forceUpdate();
     }
@@ -51,8 +65,6 @@ class GameState extends pc.ScriptType {
 
     handleUpdateHouseType(newType: string) {
         this.data.houseType = newType;
-
-        console.log(this.data.houseType);
 
         this.forceUpdate();
     }

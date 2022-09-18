@@ -44,19 +44,19 @@ const houseData: {
     },
     'HOUSE': {
         price: 500,
-        description: 'Abrakadabra'
+        description: 'Gives you +15% income boost to all buildings'
     },
     'BANK': {
         price: 2000,
-        description: 'Abrakadabra'
+        description: 'Gives you 800 cash per minute'
     },
     'WINDMILL': {
         price: 500,
-        description: 'Gives you money'
+        description: 'Gives you 400 cash per minute'
     },
     'PORT': {
         price: 4000,
-        description: 'Wasted one space, in return gives you money'
+        description: 'Gives you 1000 cash per minute'
     },
     'WINDBLOWER': {
         price: 5000,
@@ -68,7 +68,7 @@ const houseData: {
     },
     'FARM': {
         price: 1000,
-        description: 'Gives you money'
+        description: 'Gives you 600 cash per minute'
     },
 };
 
@@ -96,13 +96,48 @@ class UI extends pc.ScriptType {
             if(houseData[selected].price > this.gameState.money)
                 costMessage = `Cost ${houseData[selected].price} - NOT ENOUGH`;
             (this.div.querySelector('[plc-value-house-cost]')! as HTMLParagraphElement).innerText = costMessage;
-            (this.div.querySelector('[plc-value-house-description]') as HTMLParagraphElement).innerText = `${houseData[selected].description}`;
+            //@ts-ignore
+            (this.div.querySelectorAll('[plc-value-house-description]')).forEach(node => node.innerText = `${houseData[selected].description}`);
             if (selected === 'EMPTY')
                 selected = 'NONE';
-            (this.div.querySelector('[plc-value-currentlySelected]')! as HTMLParagraphElement).innerText = `${selected.charAt(0) + selected.substring(1).toLowerCase()}`;
+            //@ts-ignore
+            (this.div.querySelectorAll('[plc-value-currentlySelected]')).forEach(node => node.innerText = `${selected.charAt(0) + selected.substring(1).toLowerCase()}`);
         }.bind(this),
         'update-passive-boost': function (this: UI, value: number) {
-            (this.div.querySelector('[plc-value-passiveBoost]')! as HTMLParagraphElement).innerText = `Passive boost: ${value}`;
+            (this.div.querySelector('[plc-value-passiveBoost]')! as HTMLParagraphElement).innerText = `Passive boost: +${Math.round(value*100)-100}%`;
+        }.bind(this),
+        'house-action': function(this: UI, house: Building) {
+            (this.div.querySelector('[plc-overlay-currentlySelected]') as HTMLHeadingElement).innerText = `${house.type.charAt(0) + house.type.substring(1).toLowerCase()}`;
+            (this.div.querySelector('[plc-overlay-house-description]') as HTMLParagraphElement).innerText = houseData[house.type].description;
+            (this.div.querySelector('.overlay') as Element).classList.remove('hidden');
+            (this.div.querySelector('[plc-demolish-building]')! as HTMLButtonElement).addEventListener('click', () => {
+                console.log(house.uuid);
+                this.app.fire('event-demolish-building', house.uuid);
+                this.handleCloseOverlay();
+            });
+
+            if(house.type === 'ELEVATOR') {
+                const upButton = document.createElement('button');
+                upButton.addEventListener('click', function(this: UI) {
+                    this.app.fire('event-floor-up');
+                    this.handleCloseOverlay();
+                }.bind(this));
+                upButton.innerText = 'Go Up';
+                const downButton = document.createElement('button');
+                downButton.addEventListener('click', function(this: UI) {
+                    this.app.fire('event-floor-down');
+                    this.handleCloseOverlay();
+                }.bind(this));
+                downButton.innerText = 'Go Down';
+                const actionsRoot = this.div.querySelector('[plc-array-actionButtons]')!;
+                if(this.gameState.floor > 0)
+                    actionsRoot.appendChild(downButton);
+                if(this.gameState.floor < 4)
+                    actionsRoot.appendChild(upButton);
+            }
+        }.bind(this),
+        'update-floor': function (this: UI, floor: number) {
+            (this.div.querySelector('[plc-value-floor]') as HTMLParagraphElement).innerText = `Floor: ${floor}`;
         }.bind(this)
 
     };
@@ -135,11 +170,16 @@ class UI extends pc.ScriptType {
             button.addEventListener('click', () => this.actions["select-housetype"](houseType));
         })
 
+        const closeOverlayButton: Element = this.div.querySelector('[plc-close-overlay]')!;
+
+        closeOverlayButton.addEventListener('click', this.handleCloseOverlay.bind(this));
+
         console.log(buttons);
 
         document.body.appendChild(this.div);
 
         this.app.on('event-game-state-updated', this.handleUpdateUIToMatchState, this);
+        this.app.on('event-house-action', this.handleHouseAction, this);
     }
 
     handleUpdateUIToMatchState(gameState: GameData) {
@@ -147,6 +187,11 @@ class UI extends pc.ScriptType {
         this.handleUpdateMoney(gameState.money);
         this.handleUpdateCurrentlySelected(gameState.houseType);
         this.handleUpdatePassiveBoost(gameState.boosters);
+        this.handleUpdateFloor(gameState.floor);
+    }
+
+    handleUpdateFloor(floor: number) {
+        this.actions["update-floor"](floor);
     }
 
     handleUpdatePassiveBoost(value: number) {
@@ -159,6 +204,19 @@ class UI extends pc.ScriptType {
 
     handleUpdateCurrentlySelected(newCurrentlySelected: string) {
         this.actions["set-currently-selected"](newCurrentlySelected);
+    }
+
+    handleHouseAction(house: Building) {
+        this.actions["house-action"](house);
+    }
+
+    handleCloseOverlay() {
+        (this.div.querySelector('.overlay') as Element).classList.add('hidden');
+        const target = this.div.querySelector('[plc-array-actionButtons]')!;
+
+        while(target.firstChild) {
+            target.removeChild(target.lastChild!);
+        }
     }
 }
 

@@ -6,6 +6,7 @@ class PassiveGenerator extends pc.ScriptType {
 
     initialize() {
         this.app.on('event-game-state-updated', this.handleGameStateUpdate, this);
+        this.on('destroy', this.handleDestroyEvent, this);
     }
 
     update(dt: number) {
@@ -18,6 +19,10 @@ class PassiveGenerator extends pc.ScriptType {
 
     handleGameStateUpdate(gameState: GameData) {
         this.gameState = gameState;
+    }
+
+    handleDestroyEvent() {
+        this.app.fire('event-update-booster', -this.booster);
     }
 }
 

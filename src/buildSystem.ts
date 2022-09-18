@@ -1,6 +1,8 @@
 type Building = {
     type: string;
     position: pc.Vec3;
+    uuid: string;
+    entity: pc.Entity;
 };
 
 type Floor = {
@@ -20,6 +22,7 @@ const buildingsMap: {
     'HOUSE': 7
 };
 
+const globalBuildings: pc.Asset[] = [];
 class BuildSystem extends pc.ScriptType {
 
     floors: Floor[] = [{
@@ -40,17 +43,19 @@ class BuildSystem extends pc.ScriptType {
 
     currentFloor: number = 0;
 
-    buildings: pc.Asset[];
 
     landMaterials: pc.Asset[];
 
     gameState: GameData;
 
     initialize() {
+        this.app.on('event-demolish-building', this.handleDemolishHouse, this);
         this.app.on('event-grid-availability', this.handleAvailabilityEvent, this);
         this.app.on('event-grid-clicked', this.handleBuildEvent, this);
         this.app.on('event-floor-change', this.handleFloorChange, this);
         this.app.on('event-game-state-updated', this.handleStateUpdate, this);
+        this.app.on('event-floor-down', this.handleFloorDown, this);
+        this.app.on('event-floor-up', this.handleFloorUp, this);
 
         const floor = new pc.Entity();
         floor.name = `Floor ${this.currentFloor}`;
@@ -60,6 +65,52 @@ class BuildSystem extends pc.ScriptType {
 
         this.floorObjects.push(floor);
 
+    }
+
+    handleFloorDown() {
+        this.currentFloorObject = this.floorObjects[this.currentFloor-1];
+
+        this.handleFloorChange(this.gameState.floor-1);
+
+        this.floorObjects.forEach(entity => {
+            entity.setPosition(-1000, 0, 0);
+        });
+
+        this.floorObjects[this.currentFloor].setPosition(0,0,0);
+
+    }
+
+    handleFloorUp() {
+        if(this.floorObjects.length-1 < this.gameState.floor + 1) {
+            const floor = new pc.Entity();
+            floor.name = `Floor ${this.gameState.floor + 1}`;
+
+            this.app.root.addChild(floor);
+            this.currentFloorObject = floor;
+
+            this.floorObjects.push(floor);
+        } else {
+            this.currentFloorObject = this.floorObjects[this.currentFloor+1];
+        }
+
+        this.handleFloorChange(this.gameState.floor+1);
+
+        this.floorObjects.forEach(entity => {
+            entity.setPosition(-1000, 0, 0);
+        });
+
+        this.floorObjects[this.currentFloor].setPosition(0,0,0);
+    }
+
+    handleDemolishHouse(uuid: string) {
+        console.log(`handle`, uuid);
+        const currentFloor = this.floors[this.currentFloor];
+
+        const house = currentFloor.buildings.find(house => house.uuid === uuid);
+        if(!house) return;
+        const houseIndex = currentFloor.buildings.indexOf(house);
+        currentFloor.buildings.splice(houseIndex, 1);
+        house.entity.destroy();
     }
 
     handleStateUpdate(newState: GameData) {
@@ -84,7 +135,7 @@ class BuildSystem extends pc.ScriptType {
             return 'BLOCKED';
 
         if(buildingsCount > 1) {
-            status = 'BLOCKED';
+            status = 'ACTION';
         } else if(buildingsCount === 1) {
             console.log(buildings[0].type, this.gameState.houseType);
             if(buildings[0].type === 'EMPTY') {
@@ -96,7 +147,10 @@ class BuildSystem extends pc.ScriptType {
                 else if(this.gameState.houseType === 'NONE')
                     status = 'BLOCKED';
             } else if(buildings[0].type === 'PORT') {
-                status = 'BLOCKED';
+                if(this.gameState.houseType === 'NONE')
+                    status = 'ACTION';
+                else
+                    status = 'BLOCKED';
             }
         } else if(buildingsCount === 0) {
             if(this.gameState.houseType !== 'LAND' && this.gameState.houseType !== 'PORT')
@@ -126,13 +180,19 @@ class BuildSystem extends pc.ScriptType {
         const buildingsCount = buildings.length;
         console.log(`Found ${buildingsCount} at this position`);
 
+        const res = this.checkAvailability(coordinates);
         const canBuild = (() => {
-            const res = this.checkAvailability(coordinates)
 
             if(res === 'EMPTY') return true;
             return false;
 
         })();
+
+        if(res === 'ACTION') {
+            console.log(buildings);
+            const house = buildings.find(house => house.type !== 'LAND');
+            this.app.fire('event-house-action', house);
+        }
 
         if(!canBuild) return;
 
@@ -148,6 +208,7 @@ class BuildSystem extends pc.ScriptType {
         }
 
         this.app.fire('event-purchase', houseData[this.gameState.houseType].price);
+        this.app.fire('event-update-game-state-housetype', "NONE");
 
     }
 
@@ -156,14 +217,12 @@ class BuildSystem extends pc.ScriptType {
         const rotation = Math.random() * 360;
 
         const currentFloor = this.floors[this.currentFloor];
-        currentFloor.buildings.push({
-            type: 'LAND',
-            position: coordinates
-        });
+        const uuid = crypto.randomUUID();
 
-        const instance = this.buildings[buildingsMap['LAND']].resource.instantiate() as pc.Entity;
+        const instance = globalBuildings[buildingsMap['LAND']].resource.instantiate() as pc.Entity;
         instance.setPosition(new pc.Vec3(coordinates.x, -2, coordinates.z));
         instance.setEulerAngles(0, rotation, 0);
+        instance.name = uuid;
 
         const materialId = Math.round(Math.random() * (this.landMaterials.length-1));
 
@@ -173,34 +232,45 @@ class BuildSystem extends pc.ScriptType {
 
         instance.render?.meshInstances.forEach(instance => instance.material = this.landMaterials[materialId].resource as pc.Material);
 
+        const temp: Building = {
+            type: 'LAND',
+            position: coordinates,
+            uuid: uuid,
+            entity: instance
+        };
+
         this.currentFloorObject.addChild(instance);
+        currentFloor.buildings.push(temp);
     }
     spawnPort(coordinates: pc.Vec3) {
         const currentFloor = this.floors[this.currentFloor];
-        currentFloor.buildings.push({
-            type: 'PORT',
-            position: coordinates
-        });
 
-        const instance = this.buildings[buildingsMap['PORT']].resource.instantiate() as pc.Entity;
+        const instance = globalBuildings[buildingsMap['PORT']].resource.instantiate() as pc.Entity;
         instance.setPosition(new pc.Vec3(coordinates.x, -1, coordinates.z));
 
         this.currentFloorObject.addChild(instance);
+        currentFloor.buildings.push({
+            type: 'PORT',
+            position: coordinates,
+            uuid: crypto.randomUUID(),
+            entity: instance
+        });
     }
     spawnHouse(coordinates: pc.Vec3) {
         const assetIndex = buildingsMap[this.gameState.houseType];
 
         const currentFloor = this.floors[this.currentFloor];
 
-        currentFloor.buildings.push({
-            type: this.gameState.houseType,
-            position: coordinates
-        });
-
-        const instance = this.buildings[assetIndex].resource.instantiate() as pc.Entity;
+        const instance = globalBuildings[assetIndex].resource.instantiate() as pc.Entity;
         instance.setPosition(new pc.Vec3(coordinates.x, -1, coordinates.z));
 
         this.currentFloorObject.addChild(instance);
+        currentFloor.buildings.push({
+            type: this.gameState.houseType,
+            position: coordinates,
+            uuid: crypto.randomUUID(),
+            entity: instance
+        });
     }
 
 }

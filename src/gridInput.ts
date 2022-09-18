@@ -78,6 +78,10 @@ class GridInput extends pc.ScriptType {
             this.entity.render?.meshInstances.forEach(instance => {
                 instance.material = this.materials[1].resource;
             });
+        } else if(result === 'ACTION') {
+                this.entity.render?.meshInstances.forEach(instance => {
+                    instance.material = this.materials[3].resource;
+                });
         } else {
             this.entity.render?.meshInstances.forEach(instance => {
                 instance.material = this.materials[2].resource;

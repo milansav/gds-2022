@@ -3,6 +3,7 @@ class ActiveGenerator extends pc.ScriptType {
     gameState: GameData;
     floorBonus: number = -1;
     timeElapsed: number = 0;
+    multiplier: number;
 
     initialize() {
         this.app.on('event-game-state-updated', this.handleGameStateUpdate, this);
@@ -19,7 +20,9 @@ class ActiveGenerator extends pc.ScriptType {
             return;
         }
 
-        const earning = (this.gameState.baseEarning * this.timeElapsed) / 60;
+        const earning = (this.gameState.baseEarning * this.multiplier * this.timeElapsed) / 60;
+
+        console.log(`Earned per second ${earning}`);
 
         this.app.fire('event-earn-money', earning);
 
